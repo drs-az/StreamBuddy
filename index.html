@@ -355,6 +355,8 @@
       const main = document.querySelector('main.wrap');
       const INSTALL_KEY = 'sb_pwa_installed';
       let deferredInstallPrompt = null;
+      let awaitingManualConfirm = false;
+      let installAcknowledged = false;
 
       const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
@@ -383,7 +385,14 @@
         }
       };
 
-      const markInstalled = () => {
+      const completeInstallFlow = () => {
+        if (installAcknowledged) {
+          setModalVisible(false);
+          return;
+        }
+        installAcknowledged = true;
+        awaitingManualConfirm = false;
+
         localStorage.setItem(INSTALL_KEY, 'true');
         if (installButton) {
           installButton.disabled = false;
@@ -396,7 +405,9 @@
       };
 
       if (hasInstalled()) {
-        markInstalled();
+
+        completeInstallFlow();
+
       } else {
         setModalVisible(true);
       }
@@ -416,11 +427,26 @@
 
       if (installButton) {
         installButton.addEventListener('click', async () => {
+
+          if (installAcknowledged) {
+            setModalVisible(false);
+            return;
+          }
+
+          if (awaitingManualConfirm) {
+            completeInstallFlow();
+            return;
+          }
+
           if (!deferredInstallPrompt) {
             if (installMessage) {
               installMessage.hidden = false;
-              installMessage.textContent = 'Install is not available automatically. Use your browser menu to add StreamBuddy to your home screen, then reopen the app.';
+              installMessage.textContent = 'Install StreamBuddy from your browser menu, then tap “Open StreamBuddy” to continue.';
             }
+            awaitingManualConfirm = true;
+            installButton.disabled = false;
+            installButton.textContent = 'Open StreamBuddy';
+
             return;
           }
 
@@ -429,7 +455,9 @@
             deferredInstallPrompt.prompt();
             const { outcome } = await deferredInstallPrompt.userChoice;
             if (outcome === 'accepted') {
-              markInstalled();
+
+              completeInstallFlow();
+
             } else {
               installButton.disabled = false;
             }
@@ -446,12 +474,14 @@
       }
 
       window.addEventListener('appinstalled', () => {
-        markInstalled();
+
+        completeInstallFlow();
       });
 
       document.addEventListener('visibilitychange', () => {
-        if (!installModal.hidden && hasInstalled()) {
-          markInstalled();
+        if (!installAcknowledged && !installModal.hidden && hasInstalled()) {
+          completeInstallFlow();
+
         }
       });
 
