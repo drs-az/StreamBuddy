@@ -220,6 +220,10 @@
       z-index: 1000;
     }
 
+    .modal-backdrop[hidden] {
+      display: none !important;
+    }
+
     .modal-card {
       background: #fff;
       border-radius: 20px;
@@ -362,7 +366,6 @@
 
       let installCompleted = false;
 
-
       const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
       const hasInstalled = () => localStorage.getItem(INSTALL_KEY) === 'true' || isStandalone();
@@ -371,6 +374,9 @@
         if (!installModal) return;
         installModal.hidden = !visible;
         installModal.setAttribute('aria-hidden', String(!visible));
+
+        installModal.style.display = visible ? 'flex' : 'none';
+
         document.body.classList.toggle('modal-open', visible);
         if (main) {
           main.setAttribute('aria-hidden', visible ? 'true' : 'false');
@@ -385,6 +391,7 @@
             installMessage.hidden = true;
           }
           return;
+
         }
         if (visible) {
           installButton.focus({ preventScroll: true });
@@ -395,7 +402,6 @@
         } else if (installMessage) {
           installMessage.hidden = true;
         }
-
       };
 
       const setButtonMode = (mode, label, disabled = false) => {
@@ -403,6 +409,14 @@
         installButton.dataset.mode = mode;
         installButton.textContent = label;
         installButton.disabled = disabled;
+      };
+
+      const dismissModal = (permanent = false) => {
+        setModalVisible(false);
+        if (permanent && installModal && installModal.parentElement) {
+          installModal.parentElement.removeChild(installModal);
+        }
+
       };
 
       const markInstallComplete = () => {
@@ -416,7 +430,7 @@
           installMessage.textContent = 'StreamBuddy is ready! Tap Close to start using the app.';
         }
 
-        setModalVisible(false);
+        dismissModal(true);
 
       };
 
@@ -424,7 +438,9 @@
 
       if (hasInstalled()) {
         installCompleted = true;
-        setModalVisible(false);
+
+        localStorage.setItem(INSTALL_KEY, 'true');
+        dismissModal(true);
       } else {
         setModalVisible(true);
 
@@ -445,7 +461,9 @@
           const mode = installButton.dataset.mode;
 
           if (mode === 'close') {
-            setModalVisible(false);
+
+            dismissModal(true);
+
             return;
           }
 
