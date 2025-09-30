@@ -423,10 +423,11 @@
         </div>
 
         <div class="section">
-          <div class="label">Looking for a movie or a show?</div>
+          <div class="label">What format are you looking for?</div>
           <div class="choice" id="typeChoice" role="radiogroup" aria-label="Type">
             <div class="pill" data-value="Movie" tabindex="0" role="radio" aria-checked="false">Movie</div>
             <div class="pill" data-value="Show" tabindex="0" role="radio" aria-checked="false">Show</div>
+            <div class="pill" data-value="Videos" tabindex="-1" role="radio" aria-checked="false" hidden aria-hidden="true">Videos</div>
           </div>
           <input type="hidden" name="type" id="type" />
         </div>
@@ -726,17 +727,44 @@
       }
 
       const servicesEl = document.getElementById('services');
+      let youtubeCheckbox = null;
       SERVICE_LIST.forEach((name) => {
         const id = 'svc-' + name.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
         const label = document.createElement('label');
         label.className = 'chip';
         label.htmlFor = id;
         label.innerHTML = `<input id="${id}" type="checkbox" name="services" value="${name}" /> <span>${name}</span>`;
+        const input = label.querySelector('input');
+        if (name === 'YouTube') {
+          youtubeCheckbox = input;
+        }
         servicesEl.appendChild(label);
       });
 
       const typeChoice = document.getElementById('typeChoice');
       const typeInput = document.getElementById('type');
+      const videoPill = typeChoice.querySelector('[data-value="Videos"]');
+
+      const updateVideoOptionVisibility = () => {
+        if (!videoPill) return;
+        const hasYoutube = Boolean(youtubeCheckbox && youtubeCheckbox.checked);
+        videoPill.hidden = !hasYoutube;
+        videoPill.setAttribute('aria-hidden', hasYoutube ? 'false' : 'true');
+        videoPill.setAttribute('tabindex', hasYoutube ? '0' : '-1');
+        if (!hasYoutube) {
+          videoPill.dataset.active = 'false';
+          videoPill.setAttribute('aria-checked', 'false');
+          if (typeInput.value === 'Videos') {
+            typeInput.value = '';
+          }
+        }
+      };
+
+      servicesEl.addEventListener('change', (event) => {
+        if (event.target && event.target.name === 'services') {
+          updateVideoOptionVisibility();
+        }
+      });
       typeChoice.addEventListener('click', (e) => {
         const pill = e.target.closest('.pill');
         if (!pill) return;
@@ -770,10 +798,11 @@
             const el = document.querySelector(`input[name="services"][value="${v}"]`);
             if (el) el.checked = true;
           });
+          updateVideoOptionVisibility();
           const t = localStorage.getItem('sb_type');
           if (t) {
             const target = [...typeChoice.children].find((el) => el.dataset.value === t);
-            if (target) {
+            if (target && !target.hidden) {
               target.click();
             }
           }
@@ -841,16 +870,18 @@
           return;
         }
         if (!type) {
-          alert('Please choose Movie or Show.');
+          alert('Please choose Movie, Show, or Videos.');
           return;
         }
 
         saveState();
 
+        const formatLine = type === 'Videos' ? 'I want videos.' : `I want a ${type.toLowerCase()}.`;
+
         const lines = [
           `Streaming services: ${services.join(', ')}`,
           `Region: ${region}`,
-          `I want a ${type.toLowerCase()}.`,
+          formatLine,
           mood ? `Mood/genre: ${mood}` : '',
           lengthPref ? `Length: ${lengthPref}` : '',
           note ? `Notes: ${note}` : '',
@@ -873,6 +904,7 @@
         document.getElementById('note').value = '';
         localStorage.removeItem('sb_services');
         localStorage.removeItem('sb_type');
+        updateVideoOptionVisibility();
       });
     })();
   </script>
