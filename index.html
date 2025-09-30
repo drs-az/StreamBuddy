@@ -135,6 +135,7 @@
 
     textarea { min-height: 90px; resize: vertical; }
 
+
     .choice {
       display: flex;
       gap: 8px;
@@ -276,7 +277,9 @@
       <img src="./logo-sb.png" alt="StreamBuddy logo" />
       <h2 id="installTitle">Install StreamBuddy</h2>
       <p>Install StreamBuddy on your device for quick access and offline support.</p>
+
       <button id="installBtn" class="btn-primary" type="button" disabled data-mode="loading">Preparing install…</button>
+
       <p id="installMessage" class="modal-note" hidden></p>
     </div>
   </div>
@@ -356,7 +359,9 @@
       const INSTALL_KEY = 'sb_pwa_installed';
       let deferredInstallPrompt = null;
       let awaitingManualConfirm = false;
+
       let installCompleted = false;
+
 
       const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
@@ -373,6 +378,7 @@
           if ('inert' in main) {
             main.inert = visible;
           }
+
         }
         if (!installButton) {
           if (!visible && installMessage) {
@@ -389,6 +395,7 @@
         } else if (installMessage) {
           installMessage.hidden = true;
         }
+
       };
 
       const setButtonMode = (mode, label, disabled = false) => {
@@ -408,7 +415,9 @@
           installMessage.hidden = false;
           installMessage.textContent = 'StreamBuddy is ready! Tap Close to start using the app.';
         }
+
         setModalVisible(false);
+
       };
 
       setButtonMode('install', 'Install StreamBuddy', false);
@@ -418,6 +427,7 @@
         setModalVisible(false);
       } else {
         setModalVisible(true);
+
       }
 
       window.addEventListener('beforeinstallprompt', (event) => {
@@ -482,6 +492,7 @@
         });
       }
 
+
       window.addEventListener('appinstalled', () => {
         markInstallComplete();
       });
@@ -489,6 +500,7 @@
       document.addEventListener('visibilitychange', () => {
         if (!installCompleted && !installModal.hidden && hasInstalled()) {
           markInstallComplete();
+
         }
       });
 
