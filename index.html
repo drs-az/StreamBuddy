@@ -23,6 +23,8 @@
 
     *, *::before, *::after { box-sizing: border-box; }
 
+    [hidden] { display: none !important; }
+
     html, body { height: 100%; }
 
     body {
@@ -122,15 +124,32 @@
       padding: 12px 0;
     }
 
-    .intro-toggle::after {
-      content: '\25bc';
-      font-size: 0.9rem;
-      transform: rotate(var(--icon-rotate, 0deg));
+    .intro-toggle__label {
+      flex: 1;
+    }
+
+    .intro-toggle__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+    }
+
+    .intro-toggle__icon::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border: solid currentColor;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
       transition: transform 0.2s ease;
     }
 
-    .intro-toggle[data-expanded="true"]::after {
-      --icon-rotate: 180deg;
+    .intro-toggle.is-expanded .intro-toggle__icon::before {
+      transform: rotate(-135deg);
+
     }
 
     .intro-toggle:focus-visible {
@@ -386,8 +405,10 @@
 
       <section class="intro" aria-labelledby="aboutHeading">
         <h2 id="aboutHeading" class="visually-hidden">About StreamBuddy</h2>
-        <button id="introToggle" class="intro-toggle" type="button" aria-expanded="false" aria-controls="introContent" data-expanded="false">
-          About StreamBuddy
+        <button id="introToggle" class="intro-toggle" type="button" aria-expanded="false" aria-controls="introContent">
+          <span class="intro-toggle__label">About StreamBuddy</span>
+          <span class="intro-toggle__icon" aria-hidden="true"></span>
+
         </button>
         <div id="introContent" class="intro-content" hidden>
           <p>Hi, I'm Domingos, the maker of StreamBuddy. Finding a movie or show to watch shouldn't be difficult, but search functionality on streaming services is wanting and cross-platform search, like Google TV or JustWatch, requires too many steps, signing into your streaming services, and exposes you to unnecessary ads. StreamBuddy leverages AI to just give you curated movie and show recommendations based on what you want with just 1 step, no signing into your apps, no ads. And, it's free.</p>
@@ -768,16 +789,27 @@
       const introRetract = document.getElementById('introRetract');
 
       if (introToggle && introContent && introRetract) {
+
+        introContent.hidden = true;
+        introContent.setAttribute('aria-hidden', 'true');
+        introToggle.setAttribute('aria-expanded', 'false');
+        introToggle.classList.remove('is-expanded');
+
         const showIntro = () => {
           introContent.hidden = false;
+          introContent.setAttribute('aria-hidden', 'false');
           introToggle.setAttribute('aria-expanded', 'true');
-          introToggle.dataset.expanded = 'true';
+          introToggle.classList.add('is-expanded');
+
         };
 
         const hideIntro = () => {
           introContent.hidden = true;
+
+          introContent.setAttribute('aria-hidden', 'true');
           introToggle.setAttribute('aria-expanded', 'false');
-          introToggle.dataset.expanded = 'false';
+          introToggle.classList.remove('is-expanded');
+
           introToggle.focus();
         };
 
