@@ -135,6 +135,7 @@
 
     textarea { min-height: 90px; resize: vertical; }
 
+
     .choice {
       display: flex;
       gap: 8px;
@@ -280,7 +281,9 @@
       <img src="./logo-sb.png" alt="StreamBuddy logo" />
       <h2 id="installTitle">Install StreamBuddy</h2>
       <p>Install StreamBuddy on your device for quick access and offline support.</p>
+
       <button id="installBtn" class="btn-primary" type="button" disabled data-mode="loading">Preparing install…</button>
+
       <p id="installMessage" class="modal-note" hidden></p>
     </div>
   </div>
@@ -360,6 +363,7 @@
       const INSTALL_KEY = 'sb_pwa_installed';
       let deferredInstallPrompt = null;
       let awaitingManualConfirm = false;
+
       let installCompleted = false;
 
       const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -370,7 +374,9 @@
         if (!installModal) return;
         installModal.hidden = !visible;
         installModal.setAttribute('aria-hidden', String(!visible));
+
         installModal.style.display = visible ? 'flex' : 'none';
+
         document.body.classList.toggle('modal-open', visible);
         if (main) {
           main.setAttribute('aria-hidden', visible ? 'true' : 'false');
@@ -378,12 +384,14 @@
           if ('inert' in main) {
             main.inert = visible;
           }
+
         }
         if (!installButton) {
           if (!visible && installMessage) {
             installMessage.hidden = true;
           }
           return;
+
         }
         if (visible) {
           installButton.focus({ preventScroll: true });
@@ -408,6 +416,7 @@
         if (permanent && installModal && installModal.parentElement) {
           installModal.parentElement.removeChild(installModal);
         }
+
       };
 
       const markInstallComplete = () => {
@@ -420,17 +429,21 @@
           installMessage.hidden = false;
           installMessage.textContent = 'StreamBuddy is ready! Tap Close to start using the app.';
         }
+
         dismissModal(true);
+
       };
 
       setButtonMode('install', 'Install StreamBuddy', false);
 
       if (hasInstalled()) {
         installCompleted = true;
+
         localStorage.setItem(INSTALL_KEY, 'true');
         dismissModal(true);
       } else {
         setModalVisible(true);
+
       }
 
       window.addEventListener('beforeinstallprompt', (event) => {
@@ -448,7 +461,9 @@
           const mode = installButton.dataset.mode;
 
           if (mode === 'close') {
+
             dismissModal(true);
+
             return;
           }
 
@@ -495,6 +510,7 @@
         });
       }
 
+
       window.addEventListener('appinstalled', () => {
         markInstallComplete();
       });
@@ -502,6 +518,7 @@
       document.addEventListener('visibilitychange', () => {
         if (!installCompleted && !installModal.hidden && hasInstalled()) {
           markInstallComplete();
+
         }
       });
 
