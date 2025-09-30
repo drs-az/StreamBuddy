@@ -23,6 +23,8 @@
 
     *, *::before, *::after { box-sizing: border-box; }
 
+    [hidden] { display: none !important; }
+
     html, body { height: 100%; }
 
     body {
@@ -88,6 +90,91 @@
       padding: clamp(18px, 5vw, 28px);
       display: grid;
       gap: 20px;
+    }
+
+    .intro {
+      padding: 0 clamp(18px, 5vw, 28px);
+      display: grid;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.6;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .intro-toggle {
+      all: unset;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 12px 0;
+    }
+
+    .intro-toggle__label {
+      flex: 1;
+    }
+
+    .intro-toggle__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+    }
+
+    .intro-toggle__icon::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border: solid currentColor;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      transition: transform 0.2s ease;
+    }
+
+    .intro-toggle.is-expanded .intro-toggle__icon::before {
+      transform: rotate(-135deg);
+    }
+
+    .intro-toggle:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 4px;
+      border-radius: 8px;
+    }
+
+    .intro-content {
+      display: grid;
+      gap: 12px;
+    }
+
+    .intro-retract {
+      align-self: start;
+      border: none;
+      background: none;
+      color: var(--primary);
+      font: inherit;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .intro-retract:hover,
+    .intro-retract:focus-visible {
+      text-decoration: underline;
     }
 
     .section { display: grid; gap: 10px; }
@@ -297,6 +384,17 @@
           <p>Pick your services + vibe. Jump straight to smart, live-streaming recommendations.</p>
         </div>
       </header>
+      <section class="intro" aria-labelledby="aboutHeading">
+        <h2 id="aboutHeading" class="visually-hidden">About StreamBuddy</h2>
+        <button id="introToggle" class="intro-toggle" type="button" aria-expanded="false" aria-controls="introContent">
+          <span class="intro-toggle__label">About StreamBuddy</span>
+          <span class="intro-toggle__icon" aria-hidden="true"></span>
+        </button>
+        <div id="introContent" class="intro-content" hidden>
+          <p>Hi, I'm Domingos, the maker of StreamBuddy. Finding a movie or show to watch shouldn't be difficult, but search functionality on streaming services is wanting and cross-platform search, like Google TV or JustWatch, requires too many steps, signing into your streaming services, and exposes you to unnecessary ads. StreamBuddy leverages AI to just give you curated movie and show recommendations based on what you want with just 1 step, no signing into your apps, no ads. And, it's free.</p>
+          <button id="introRetract" class="intro-retract" type="button">Hide</button>
+        </div>
+      </section>
       <form id="sb-form">
         <div class="section">
           <div class="label">Which streaming services do you have? <span class="hint">(pick all that apply)</span></div>
@@ -586,6 +684,44 @@
       };
 
       loadState();
+
+      const introToggle = document.getElementById('introToggle');
+      const introContent = document.getElementById('introContent');
+      const introRetract = document.getElementById('introRetract');
+
+      if (introToggle && introContent && introRetract) {
+        introContent.hidden = true;
+        introContent.setAttribute('aria-hidden', 'true');
+        introToggle.setAttribute('aria-expanded', 'false');
+        introToggle.classList.remove('is-expanded');
+
+        const showIntro = () => {
+          introContent.hidden = false;
+          introContent.setAttribute('aria-hidden', 'false');
+          introToggle.setAttribute('aria-expanded', 'true');
+          introToggle.classList.add('is-expanded');
+        };
+
+        const hideIntro = () => {
+          introContent.hidden = true;
+          introContent.setAttribute('aria-hidden', 'true');
+          introToggle.setAttribute('aria-expanded', 'false');
+          introToggle.classList.remove('is-expanded');
+          introToggle.focus();
+        };
+
+        introToggle.addEventListener('click', () => {
+          if (introContent.hidden) {
+            showIntro();
+          } else {
+            hideIntro();
+          }
+        });
+
+        introRetract.addEventListener('click', () => {
+          hideIntro();
+        });
+      }
 
       const form = document.getElementById('sb-form');
       form.addEventListener('submit', (e) => {
