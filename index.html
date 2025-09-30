@@ -149,6 +149,7 @@
 
     .intro-toggle.is-expanded .intro-toggle__icon::before {
       transform: rotate(-135deg);
+
     }
 
     .intro-toggle:focus-visible {
@@ -290,6 +291,23 @@
       color: var(--muted);
       font-size: 0.9rem;
       padding-bottom: clamp(16px, 4vw, 24px);
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    footer .footer-note {
+      margin: 0;
+    }
+
+    footer button {
+      font-size: 0.95rem;
+    }
+
+    footer .update-status {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
     }
 
     a { color: var(--primary); text-decoration: none; }
@@ -384,16 +402,19 @@
           <p>Pick your services + vibe. Jump straight to smart, live-streaming recommendations.</p>
         </div>
       </header>
+
       <section class="intro" aria-labelledby="aboutHeading">
         <h2 id="aboutHeading" class="visually-hidden">About StreamBuddy</h2>
         <button id="introToggle" class="intro-toggle" type="button" aria-expanded="false" aria-controls="introContent">
           <span class="intro-toggle__label">About StreamBuddy</span>
           <span class="intro-toggle__icon" aria-hidden="true"></span>
+
         </button>
         <div id="introContent" class="intro-content" hidden>
           <p>Hi, I'm Domingos, the maker of StreamBuddy. Finding a movie or show to watch shouldn't be difficult, but search functionality on streaming services is wanting and cross-platform search, like Google TV or JustWatch, requires too many steps, signing into your streaming services, and exposes you to unnecessary ads. StreamBuddy leverages AI to just give you curated movie and show recommendations based on what you want with just 1 step, no signing into your apps, no ads. And, it's free.</p>
           <button id="introRetract" class="intro-retract" type="button">Hide</button>
         </div>
+
       </section>
       <form id="sb-form">
         <div class="section">
@@ -443,7 +464,11 @@
         </div>
       </form>
     </div>
-    <footer>Built with ❤ for couch time.</footer>
+    <footer>
+      <p class="footer-note">Built with ❤ for couch time.</p>
+      <button class="btn-secondary" type="button" id="updateBtn">Update StreamBuddy</button>
+      <p class="update-status" id="updateStatus" role="status" aria-live="polite" hidden></p>
+    </footer>
   </main>
 
   <script>
@@ -458,11 +483,51 @@
       const installButton = document.getElementById('installBtn');
       const installMessage = document.getElementById('installMessage');
       const main = document.querySelector('main.wrap');
+      const updateButton = document.getElementById('updateBtn');
+      const updateStatus = document.getElementById('updateStatus');
       const INSTALL_KEY = 'sb_pwa_installed';
       let deferredInstallPrompt = null;
       let awaitingManualConfirm = false;
 
       let installCompleted = false;
+      let updateButtonTimeout = null;
+
+      const setUpdateButtonState = (label, disabled = false) => {
+        if (!updateButton) return;
+        updateButton.textContent = label;
+        updateButton.disabled = disabled;
+      };
+
+      const showUpdateStatus = (message) => {
+        if (!updateStatus) return;
+        if (!message) {
+          updateStatus.hidden = true;
+          updateStatus.textContent = '';
+          return;
+        }
+        updateStatus.hidden = false;
+        updateStatus.textContent = message;
+      };
+
+      const handleServiceWorkerMessage = (event) => {
+        if (!event.data) return;
+        if (updateButtonTimeout) {
+          clearTimeout(updateButtonTimeout);
+          updateButtonTimeout = null;
+        }
+
+        if (event.data.type === 'SB_UPDATE_COMPLETE') {
+          setUpdateButtonState('Updated', true);
+          showUpdateStatus('StreamBuddy is up to date! Reloading…');
+          window.setTimeout(() => {
+            window.location.reload();
+          }, 800);
+        } else if (event.data.type === 'SB_UPDATE_ERROR') {
+          const errorMessage = event.data.message ? `Update failed: ${event.data.message}` : 'Update failed. Please try again.';
+          showUpdateStatus(errorMessage);
+          setUpdateButtonState('Update StreamBuddy', false);
+        }
+      };
 
       const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
@@ -624,6 +689,40 @@
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./service-worker.js').catch(() => {});
         });
+
+        navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+      }
+
+      if (updateButton) {
+        updateButton.addEventListener('click', async () => {
+          if (!('serviceWorker' in navigator)) {
+            showUpdateStatus('Service worker updates are not supported in this browser.');
+            return;
+          }
+
+          setUpdateButtonState('Updating…', true);
+          showUpdateStatus('Refreshing StreamBuddy assets…');
+
+          try {
+            const registration = await navigator.serviceWorker.ready;
+            if (registration && registration.active) {
+              registration.active.postMessage({ type: 'SB_UPDATE' });
+              if (updateButtonTimeout) {
+                clearTimeout(updateButtonTimeout);
+              }
+              updateButtonTimeout = window.setTimeout(() => {
+                updateButtonTimeout = null;
+                setUpdateButtonState('Update StreamBuddy', false);
+                showUpdateStatus('Update is taking longer than expected. Please try again in a moment.');
+              }, 15000);
+            } else {
+              throw new Error('Service worker not ready');
+            }
+          } catch (error) {
+            showUpdateStatus('Unable to update right now. Please try again.');
+            setUpdateButtonState('Update StreamBuddy', false);
+          }
+        });
       }
 
       const servicesEl = document.getElementById('services');
@@ -690,6 +789,7 @@
       const introRetract = document.getElementById('introRetract');
 
       if (introToggle && introContent && introRetract) {
+
         introContent.hidden = true;
         introContent.setAttribute('aria-hidden', 'true');
         introToggle.setAttribute('aria-expanded', 'false');
@@ -700,13 +800,16 @@
           introContent.setAttribute('aria-hidden', 'false');
           introToggle.setAttribute('aria-expanded', 'true');
           introToggle.classList.add('is-expanded');
+
         };
 
         const hideIntro = () => {
           introContent.hidden = true;
+
           introContent.setAttribute('aria-hidden', 'true');
           introToggle.setAttribute('aria-expanded', 'false');
           introToggle.classList.remove('is-expanded');
+
           introToggle.focus();
         };
 
