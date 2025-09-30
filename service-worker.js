@@ -1,5 +1,6 @@
 const CACHE_VERSION = 'v1';
-const CACHE_NAME = `streambuddy-${CACHE_VERSION}`;
+const CACHE_PREFIX = 'streambuddy-';
+const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const APP_SHELL = [
   './',
   './index.html',
@@ -17,7 +18,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+      Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
     )
   );
   self.clients.claim();
@@ -59,5 +64,44 @@ self.addEventListener('fetch', (event) => {
           return caches.match(event.request);
         });
     })
+  );
+});
+
+self.addEventListener('message', (event) => {
+  if (!event.data || event.data.type !== 'SB_UPDATE') {
+    return;
+  }
+
+  event.waitUntil(
+    (async () => {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys
+            .filter((key) => key.startsWith(CACHE_PREFIX))
+            .map((key) => caches.delete(key))
+        );
+
+        const cache = await caches.open(CACHE_NAME);
+        await Promise.all(
+          APP_SHELL.map((resource) =>
+            cache.add(new Request(resource, { cache: 'reload' }))
+          )
+        );
+
+        const clients = await self.clients.matchAll();
+        clients.forEach((client) =>
+          client.postMessage({ type: 'SB_UPDATE_COMPLETE' })
+        );
+      } catch (error) {
+        const clients = await self.clients.matchAll();
+        clients.forEach((client) =>
+          client.postMessage({
+            type: 'SB_UPDATE_ERROR',
+            message: error && error.message ? error.message : 'Unknown error'
+          })
+        );
+      }
+    })()
   );
 });

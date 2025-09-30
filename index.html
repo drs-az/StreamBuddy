@@ -211,6 +211,23 @@
       color: var(--muted);
       font-size: 0.9rem;
       padding-bottom: clamp(16px, 4vw, 24px);
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    footer .footer-note {
+      margin: 0;
+    }
+
+    footer button {
+      font-size: 0.95rem;
+    }
+
+    footer .update-status {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
     }
 
     a { color: var(--primary); text-decoration: none; }
@@ -356,7 +373,11 @@
         </div>
       </form>
     </div>
-    <footer>Built with ❤ for couch time.</footer>
+    <footer>
+      <p class="footer-note">Built with ❤ for couch time.</p>
+      <button class="btn-secondary" type="button" id="updateBtn">Update StreamBuddy</button>
+      <p class="update-status" id="updateStatus" role="status" aria-live="polite" hidden></p>
+    </footer>
   </main>
 
   <script>
@@ -371,11 +392,51 @@
       const installButton = document.getElementById('installBtn');
       const installMessage = document.getElementById('installMessage');
       const main = document.querySelector('main.wrap');
+      const updateButton = document.getElementById('updateBtn');
+      const updateStatus = document.getElementById('updateStatus');
       const INSTALL_KEY = 'sb_pwa_installed';
       let deferredInstallPrompt = null;
       let awaitingManualConfirm = false;
 
       let installCompleted = false;
+      let updateButtonTimeout = null;
+
+      const setUpdateButtonState = (label, disabled = false) => {
+        if (!updateButton) return;
+        updateButton.textContent = label;
+        updateButton.disabled = disabled;
+      };
+
+      const showUpdateStatus = (message) => {
+        if (!updateStatus) return;
+        if (!message) {
+          updateStatus.hidden = true;
+          updateStatus.textContent = '';
+          return;
+        }
+        updateStatus.hidden = false;
+        updateStatus.textContent = message;
+      };
+
+      const handleServiceWorkerMessage = (event) => {
+        if (!event.data) return;
+        if (updateButtonTimeout) {
+          clearTimeout(updateButtonTimeout);
+          updateButtonTimeout = null;
+        }
+
+        if (event.data.type === 'SB_UPDATE_COMPLETE') {
+          setUpdateButtonState('Updated', true);
+          showUpdateStatus('StreamBuddy is up to date! Reloading…');
+          window.setTimeout(() => {
+            window.location.reload();
+          }, 800);
+        } else if (event.data.type === 'SB_UPDATE_ERROR') {
+          const errorMessage = event.data.message ? `Update failed: ${event.data.message}` : 'Update failed. Please try again.';
+          showUpdateStatus(errorMessage);
+          setUpdateButtonState('Update StreamBuddy', false);
+        }
+      };
 
       const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
@@ -536,6 +597,40 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+        });
+
+        navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+      }
+
+      if (updateButton) {
+        updateButton.addEventListener('click', async () => {
+          if (!('serviceWorker' in navigator)) {
+            showUpdateStatus('Service worker updates are not supported in this browser.');
+            return;
+          }
+
+          setUpdateButtonState('Updating…', true);
+          showUpdateStatus('Refreshing StreamBuddy assets…');
+
+          try {
+            const registration = await navigator.serviceWorker.ready;
+            if (registration && registration.active) {
+              registration.active.postMessage({ type: 'SB_UPDATE' });
+              if (updateButtonTimeout) {
+                clearTimeout(updateButtonTimeout);
+              }
+              updateButtonTimeout = window.setTimeout(() => {
+                updateButtonTimeout = null;
+                setUpdateButtonState('Update StreamBuddy', false);
+                showUpdateStatus('Update is taking longer than expected. Please try again in a moment.');
+              }, 15000);
+            } else {
+              throw new Error('Service worker not ready');
+            }
+          } catch (error) {
+            showUpdateStatus('Unable to update right now. Please try again.');
+            setUpdateButtonState('Update StreamBuddy', false);
+          }
         });
       }
 
