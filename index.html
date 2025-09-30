@@ -135,6 +135,7 @@
 
     textarea { min-height: 90px; resize: vertical; }
 
+
     .choice {
       display: flex;
       gap: 8px;
@@ -377,8 +378,8 @@
           if ('inert' in main) {
             main.inert = visible;
           }
-        }
 
+        }
         if (!installButton) {
           if (!visible && installMessage) {
             installMessage.hidden = true;
@@ -386,17 +387,15 @@
           return;
         }
         if (visible) {
-
           installButton.focus({ preventScroll: true });
           if (installButton.disabled && installMessage) {
             installMessage.hidden = false;
             installMessage.textContent = 'Hang tight—your browser is preparing the install prompt.';
           }
-
         } else if (installMessage) {
-
           installMessage.hidden = true;
         }
+
       };
 
       const setButtonMode = (mode, label, disabled = false) => {
@@ -416,6 +415,9 @@
           installMessage.hidden = false;
           installMessage.textContent = 'StreamBuddy is ready! Tap Close to start using the app.';
         }
+
+        setModalVisible(false);
+
       };
 
       setButtonMode('install', 'Install StreamBuddy', false);
@@ -425,6 +427,7 @@
         setModalVisible(false);
       } else {
         setModalVisible(true);
+
       }
 
       window.addEventListener('beforeinstallprompt', (event) => {
@@ -488,6 +491,7 @@
           deferredInstallPrompt = null;
         });
       }
+
 
       window.addEventListener('appinstalled', () => {
         markInstallComplete();
