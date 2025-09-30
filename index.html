@@ -276,7 +276,9 @@
       <img src="./logo-sb.png" alt="StreamBuddy logo" />
       <h2 id="installTitle">Install StreamBuddy</h2>
       <p>Install StreamBuddy on your device for quick access and offline support.</p>
-      <button id="installBtn" class="btn-primary" type="button" disabled>Preparing install…</button>
+
+      <button id="installBtn" class="btn-primary" type="button" disabled data-mode="loading">Preparing install…</button>
+
       <p id="installMessage" class="modal-note" hidden></p>
     </div>
   </div>
@@ -356,7 +358,9 @@
       const INSTALL_KEY = 'sb_pwa_installed';
       let deferredInstallPrompt = null;
       let awaitingManualConfirm = false;
-      let installAcknowledged = false;
+
+      let installCompleted = false;
+
 
       const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
@@ -374,40 +378,51 @@
             main.inert = visible;
           }
         }
-        if (visible && installButton) {
+
+        if (!installButton) {
+          if (!visible && installMessage) {
+            installMessage.hidden = true;
+          }
+          return;
+        }
+        if (visible) {
+
           installButton.focus({ preventScroll: true });
           if (installButton.disabled && installMessage) {
             installMessage.hidden = false;
             installMessage.textContent = 'Hang tight—your browser is preparing the install prompt.';
           }
-        } else if (!visible && installMessage) {
+
+        } else if (installMessage) {
+
           installMessage.hidden = true;
         }
       };
 
-      const completeInstallFlow = () => {
-        if (installAcknowledged) {
-          setModalVisible(false);
-          return;
-        }
-        installAcknowledged = true;
+      const setButtonMode = (mode, label, disabled = false) => {
+        if (!installButton) return;
+        installButton.dataset.mode = mode;
+        installButton.textContent = label;
+        installButton.disabled = disabled;
+      };
+
+      const markInstallComplete = () => {
+        if (installCompleted) return;
+        installCompleted = true;
         awaitingManualConfirm = false;
-
         localStorage.setItem(INSTALL_KEY, 'true');
-        if (installButton) {
-          installButton.disabled = false;
-          installButton.textContent = 'Open StreamBuddy';
-        }
+        setButtonMode('close', 'Close', false);
         if (installMessage) {
-          installMessage.hidden = true;
+          installMessage.hidden = false;
+          installMessage.textContent = 'StreamBuddy is ready! Tap Close to start using the app.';
         }
-        setModalVisible(false);
       };
+
+      setButtonMode('install', 'Install StreamBuddy', false);
 
       if (hasInstalled()) {
-
-        completeInstallFlow();
-
+        installCompleted = true;
+        setModalVisible(false);
       } else {
         setModalVisible(true);
       }
@@ -415,10 +430,7 @@
       window.addEventListener('beforeinstallprompt', (event) => {
         event.preventDefault();
         deferredInstallPrompt = event;
-        if (installButton) {
-          installButton.disabled = false;
-          installButton.textContent = 'Install StreamBuddy';
-        }
+        setButtonMode('install', 'Install StreamBuddy', false);
         if (installMessage) {
           installMessage.hidden = false;
           installMessage.textContent = 'Tap “Install StreamBuddy” to continue.';
@@ -427,43 +439,47 @@
 
       if (installButton) {
         installButton.addEventListener('click', async () => {
+          const mode = installButton.dataset.mode;
 
-          if (installAcknowledged) {
+          if (mode === 'close') {
             setModalVisible(false);
             return;
           }
 
-          if (awaitingManualConfirm) {
-            completeInstallFlow();
+          if (mode === 'confirm' || awaitingManualConfirm) {
+            if (!hasInstalled()) {
+              if (installMessage) {
+                installMessage.hidden = false;
+                installMessage.textContent = 'Finish adding StreamBuddy to your home screen, then tap “I installed StreamBuddy”.';
+              }
+              return;
+            }
+            markInstallComplete();
             return;
           }
 
           if (!deferredInstallPrompt) {
             if (installMessage) {
               installMessage.hidden = false;
-              installMessage.textContent = 'Install StreamBuddy from your browser menu, then tap “Open StreamBuddy” to continue.';
+              installMessage.textContent = 'Install StreamBuddy from your browser menu, then tap “I installed StreamBuddy” once it’s installed.';
             }
             awaitingManualConfirm = true;
-            installButton.disabled = false;
-            installButton.textContent = 'Open StreamBuddy';
-
+            setButtonMode('confirm', 'I installed StreamBuddy', false);
             return;
           }
 
-          installButton.disabled = true;
+          setButtonMode('install', 'Installing…', true);
           try {
             deferredInstallPrompt.prompt();
             const { outcome } = await deferredInstallPrompt.userChoice;
             if (outcome === 'accepted') {
-
-              completeInstallFlow();
-
+              markInstallComplete();
             } else {
-              installButton.disabled = false;
+              setButtonMode('install', 'Install StreamBuddy', false);
             }
           } catch (error) {
             console.warn('Install prompt failed', error);
-            installButton.disabled = false;
+            setButtonMode('install', 'Install StreamBuddy', false);
             if (installMessage) {
               installMessage.hidden = false;
               installMessage.textContent = 'We couldn\'t open the install prompt. Try using your browser menu to add StreamBuddy to your home screen.';
@@ -474,13 +490,12 @@
       }
 
       window.addEventListener('appinstalled', () => {
-
-        completeInstallFlow();
+        markInstallComplete();
       });
 
       document.addEventListener('visibilitychange', () => {
-        if (!installAcknowledged && !installModal.hidden && hasInstalled()) {
-          completeInstallFlow();
+        if (!installCompleted && !installModal.hidden && hasInstalled()) {
+          markInstallComplete();
 
         }
       });
