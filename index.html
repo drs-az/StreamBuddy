@@ -392,6 +392,7 @@
         }
         installAcknowledged = true;
         awaitingManualConfirm = false;
+
         localStorage.setItem(INSTALL_KEY, 'true');
         if (installButton) {
           installButton.disabled = false;
@@ -404,7 +405,9 @@
       };
 
       if (hasInstalled()) {
+
         completeInstallFlow();
+
       } else {
         setModalVisible(true);
       }
@@ -424,6 +427,7 @@
 
       if (installButton) {
         installButton.addEventListener('click', async () => {
+
           if (installAcknowledged) {
             setModalVisible(false);
             return;
@@ -442,6 +446,7 @@
             awaitingManualConfirm = true;
             installButton.disabled = false;
             installButton.textContent = 'Open StreamBuddy';
+
             return;
           }
 
@@ -450,7 +455,9 @@
             deferredInstallPrompt.prompt();
             const { outcome } = await deferredInstallPrompt.userChoice;
             if (outcome === 'accepted') {
+
               completeInstallFlow();
+
             } else {
               installButton.disabled = false;
             }
@@ -467,12 +474,14 @@
       }
 
       window.addEventListener('appinstalled', () => {
+
         completeInstallFlow();
       });
 
       document.addEventListener('visibilitychange', () => {
         if (!installAcknowledged && !installModal.hidden && hasInstalled()) {
           completeInstallFlow();
+
         }
       });
 
