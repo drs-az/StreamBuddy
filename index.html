@@ -1,0 +1,250 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StreamBuddy — Find Something to Watch</title>
+  <meta name="description" content="Pick your streaming services and vibe, then jump straight into StreamBuddy for real-time recommendations." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%237b5cff'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #111111;
+      --muted: #6b7280;
+      --primary: #7b5cff; /* matches logo accent */
+      --border: #e5e7eb;
+      --radius: 16px;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      display: grid; place-items: center;
+    }
+    .wrap { width: 100%; max-width: 760px; padding: 24px; }
+    .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
+    header { display: flex; align-items: center; gap: 16px; padding: 24px; border-bottom: 1px solid var(--border); }
+    header img { width: 44px; height: 44px; object-fit: contain; user-select: none; }
+    header h1 { font-size: 1.25rem; margin: 0; }
+    header p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }form { padding: 24px; display: grid; gap: 20px; }
+.section { display: grid; gap: 10px; }
+.label { font-weight: 600; }
+
+.services {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;
+}
+.chip {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff;
+}
+.hint { color: var(--muted); font-size: .9rem; }
+
+.row { display: grid; gap: 10px; }
+@media (min-width: 640px) { .row { grid-template-columns: 1fr 1fr; gap: 12px; } }
+
+input[type="text"], textarea, select {
+  width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: #fff; color: var(--fg);
+  font: inherit;
+}
+textarea { min-height: 80px; resize: vertical; }
+
+.choice { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill {
+  border: 1px solid var(--border); padding: 8px 12px; border-radius: 999px; cursor: pointer; user-select: none;
+  transition: border .15s ease, background .15s ease;
+}
+.pill[data-active="true"] { border-color: var(--primary); background: rgba(123,92,255,.08); }
+
+.actions { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 0 24px 24px 24px; }
+button {
+  appearance: none; border: 1px solid transparent; padding: 12px 16px; border-radius: 12px; font-weight: 600; cursor: pointer;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-secondary { background: #fff; color: var(--fg); border-color: var(--border); }
+
+footer { text-align: center; color: var(--muted); font-size: .9rem; margin-top: 16px; }
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="card">
+      <header>
+        <img src="./logo-sb.png" alt="StreamBuddy logo" />
+        <div>
+          <h1>StreamBuddy</h1>
+          <p>Pick your services + vibe. Jump straight to smart, live-streaming recommendations.</p>
+        </div>
+      </header><form id="sb-form">
+    <!-- Services -->
+    <div class="section">
+      <div class="label">Which streaming services do you have? <span class="hint">(pick all that apply)</span></div>
+      <div class="services" id="services">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Movie or Show -->
+    <div class="section">
+      <div class="label">Looking for a movie or a show?</div>
+      <div class="choice" id="typeChoice" role="radiogroup" aria-label="Type">
+        <div class="pill" data-value="Movie" tabindex="0" role="radio" aria-checked="false">Movie</div>
+        <div class="pill" data-value="Show" tabindex="0" role="radio" aria-checked="false">Show</div>
+      </div>
+      <input type="hidden" name="type" id="type" />
+    </div>
+
+    <!-- Details -->
+    <div class="section row">
+      <div>
+        <label class="label" for="mood">Mood / genre</label>
+        <input id="mood" name="mood" type="text" placeholder="e.g., feel-good comedy, gritty thriller, cozy family" />
+      </div>
+      <div>
+        <label class="label" for="length">Length preference</label>
+        <input id="length" name="length" type="text" placeholder="e.g., under 2 hours, quick 30-min eps, epic marathon" />
+      </div>
+    </div>
+
+    <!-- Region -->
+    <div class="section">
+      <label class="label" for="region">Region</label>
+      <select id="region" name="region">
+        <option value="United States" selected>United States</option>
+        <option value="Canada">Canada</option>
+        <option value="United Kingdom">United Kingdom</option>
+        <option value="Australia">Australia</option>
+        <option value="Other">Other</option>
+      </select>
+      <div class="hint">Defaults to U.S. availability for catalog checks.</div>
+    </div>
+
+    <!-- Free text prompt (optional) -->
+    <div class="section">
+      <label class="label" for="note">Anything else?</label>
+      <textarea id="note" name="note" placeholder="Allergic to jump scares, love heist stories, short attention span tonight…"></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn-secondary" type="button" id="resetBtn" title="Clear selections">Reset</button>
+      <button class="btn-primary" type="submit">Find something to watch →</button>
+    </div>
+  </form>
+</div>
+<footer>
+  Opens StreamBuddy in a new tab on submission. Logo © you. Built with ❤ for couch time.
+</footer>
+
+  </main>  <script>
+    // --- Config ---
+    const GPT_URL = "https://chatgpt.com/g/g-68db4aded8108191b411986b44384c32-streambuddy";
+    const SERVICE_LIST = [
+      "Netflix","Hulu","Prime Video","Disney+","Max","Peacock","Paramount+","Apple TV+",
+      "Starz","Showtime","AMC+","Crunchyroll","Tubi","Pluto TV","Freevee","MUBI","Sling TV"
+    ];
+
+    // Render service checkboxes
+    const servicesEl = document.getElementById('services');
+    SERVICE_LIST.forEach(name => {
+      const id = 'svc-' + name.replace(/[^a-z0-9]+/gi,'-').toLowerCase();
+      const label = document.createElement('label');
+      label.className = 'chip';
+      label.htmlFor = id;
+      label.innerHTML = `<input id="${id}" type="checkbox" name="services" value="${name}"/> <span>${name}</span>`;
+      servicesEl.appendChild(label);
+    });
+
+    // Movie/Show pills → hidden input
+    const typeChoice = document.getElementById('typeChoice');
+    const typeInput = document.getElementById('type');
+    typeChoice.addEventListener('click', (e) => {
+      const pill = e.target.closest('.pill');
+      if (!pill) return;
+      [...typeChoice.children].forEach(el => el.dataset.active = 'false');
+      pill.dataset.active = 'true';
+      typeInput.value = pill.dataset.value;
+      [...typeChoice.querySelectorAll('[role="radio"]')].forEach(el => el.setAttribute('aria-checked','false'));
+      pill.setAttribute('aria-checked','true');
+    });
+    // Keyboard support
+    typeChoice.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.target.click(); }
+    });
+
+    // Persist minimal state (services + type) across refresh within same browser
+    const saveState = () => {
+      const svcs = [...document.querySelectorAll('input[name="services"]:checked')].map(i=>i.value);
+      localStorage.setItem('sb_services', JSON.stringify(svcs));
+      localStorage.setItem('sb_type', typeInput.value || '');
+    };
+    const loadState = () => {
+      try {
+        const svcs = JSON.parse(localStorage.getItem('sb_services')||'[]');
+        svcs.forEach(v => {
+          const el = document.querySelector(`input[name="services"][value="${v}"]`);
+          if (el) el.checked = true;
+        });
+        const t = localStorage.getItem('sb_type');
+        if (t) {
+          const target = [...typeChoice.children].find(el => el.dataset.value === t);
+          if (target) { target.click(); }
+        }
+      } catch {}
+    };
+    loadState();
+
+    // Form submission → build q param and open GPT
+    const form = document.getElementById('sb-form');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const services = [...document.querySelectorAll('input[name="services"]:checked')].map(i => i.value);
+      const type = typeInput.value.trim();
+      const mood = document.getElementById('mood').value.trim();
+      const lengthPref = document.getElementById('length').value.trim();
+      const region = document.getElementById('region').value.trim() || 'United States';
+      const note = document.getElementById('note').value.trim();
+
+      if (services.length === 0) {
+        alert('Please select at least one streaming service.');
+        return;
+      }
+      if (!type) {
+        alert('Please choose Movie or Show.');
+        return;
+      }
+
+      // Save state
+      saveState();
+
+      // Compose the conversation seed using your preferred q-method
+      const lines = [
+        `Streaming services: ${services.join(', ')}`,
+        `Region: ${region}`,
+        `I want a ${type.toLowerCase()}.`,
+        mood ? `Mood/genre: ${mood}` : '',
+        lengthPref ? `Length: ${lengthPref}` : '',
+        note ? `Notes: ${note}` : '',
+        'Please recommend 1–3 options formatted exactly as:\nStreaming Service\nTitle\nMain stars\nReview Rating (Rotten Tomatoes preferred)\nSummary',
+        'Remember my services for this session.'
+      ].filter(Boolean).join('\n');
+
+      const url = `${GPT_URL}?q=${encodeURIComponent(lines)}`;
+      window.open(url, '_blank', 'noopener');
+    });
+
+    // Reset
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      [...document.querySelectorAll('input[name="services"]')].forEach(i => i.checked = false);
+      [...typeChoice.children].forEach(el => el.dataset.active = 'false');
+      [...typeChoice.querySelectorAll('[role="radio"]')].forEach(el => el.setAttribute('aria-checked','false'));
+      typeInput.value = '';
+      document.getElementById('mood').value = '';
+      document.getElementById('length').value = '';
+      document.getElementById('region').value = 'United States';
+      document.getElementById('note').value = '';
+      localStorage.removeItem('sb_services');
+      localStorage.removeItem('sb_type');
+    });
+  </script></body>
+</html>
