@@ -1,74 +1,291 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>StreamBuddy — Find Something to Watch</title>
   <meta name="description" content="Pick your streaming services and vibe, then jump straight into StreamBuddy for real-time recommendations." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%237b5cff'/%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#7b5cff" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./logo-sb.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./logo-sb.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <style>
     :root {
       --bg: #ffffff;
       --fg: #111111;
       --muted: #6b7280;
-      --primary: #7b5cff; /* matches logo accent */
+      --primary: #7b5cff;
       --border: #e5e7eb;
       --radius: 16px;
     }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
     html, body { height: 100%; }
+
     body {
-      margin: 0; background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      display: grid; place-items: center;
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      display: flex;
+      min-height: 100%;
+      flex-direction: column;
     }
-    .wrap { width: 100%; max-width: 760px; padding: 24px; }
-    .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
-    header { display: flex; align-items: center; gap: 16px; padding: 24px; border-bottom: 1px solid var(--border); }
-    header img { width: 44px; height: 44px; object-fit: contain; user-select: none; }
-    header h1 { font-size: 1.25rem; margin: 0; }
-    header p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }form { padding: 24px; display: grid; gap: 20px; }
-.section { display: grid; gap: 10px; }
-.label { font-weight: 600; }
 
-.services {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;
-}
-.chip {
-  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff;
-}
-.hint { color: var(--muted); font-size: .9rem; }
+    body.modal-open { overflow: hidden; }
 
-.row { display: grid; gap: 10px; }
-@media (min-width: 640px) { .row { grid-template-columns: 1fr 1fr; gap: 12px; } }
+    main.wrap {
+      width: min(100%, 760px);
+      margin: 0 auto;
+      padding: clamp(16px, 4vw, 32px);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: filter 0.25s ease;
+    }
 
-input[type="text"], textarea, select {
-  width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: #fff; color: var(--fg);
-  font: inherit;
-}
-textarea { min-height: 80px; resize: vertical; }
+    main.wrap.blurred { filter: blur(2px); }
 
-.choice { display: flex; gap: 8px; flex-wrap: wrap; }
-.pill {
-  border: 1px solid var(--border); padding: 8px 12px; border-radius: 999px; cursor: pointer; user-select: none;
-  transition: border .15s ease, background .15s ease;
-}
-.pill[data-active="true"] { border-color: var(--primary); background: rgba(123,92,255,.08); }
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
 
-.actions { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 0 24px 24px 24px; }
-button {
-  appearance: none; border: 1px solid transparent; padding: 12px 16px; border-radius: 12px; font-weight: 600; cursor: pointer;
-}
-.btn-primary { background: var(--primary); color: white; }
-.btn-secondary { background: #fff; color: var(--fg); border-color: var(--border); }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: clamp(18px, 5vw, 28px);
+      border-bottom: 1px solid var(--border);
+    }
 
-footer { text-align: center; color: var(--muted); font-size: .9rem; margin-top: 16px; }
-a { color: var(--primary); text-decoration: none; }
-a:hover { text-decoration: underline; }
+    header img {
+      width: clamp(40px, 6vw, 56px);
+      height: clamp(40px, 6vw, 56px);
+      object-fit: contain;
+      user-select: none;
+    }
 
+    header h1 {
+      font-size: clamp(1.25rem, 3vw, 1.65rem);
+      margin: 0;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: clamp(0.9rem, 2.5vw, 1rem);
+    }
+
+    form {
+      padding: clamp(18px, 5vw, 28px);
+      display: grid;
+      gap: 20px;
+    }
+
+    .section { display: grid; gap: 10px; }
+
+    .label { font-weight: 600; }
+
+    .services {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      line-height: 1.25;
+    }
+
+    .chip input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .hint { color: var(--muted); font-size: 0.9rem; }
+
+    .row { display: grid; gap: 10px; }
+    @media (min-width: 640px) {
+      .row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--fg);
+      font: inherit;
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+
+    .choice {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      user-select: none;
+      transition: border 0.15s ease, background 0.15s ease;
+    }
+
+    .pill[data-active="true"] {
+      border-color: var(--primary);
+      background: rgba(123, 92, 255, 0.08);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 clamp(18px, 5vw, 28px) clamp(18px, 5vw, 28px);
+      flex-wrap: wrap;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid transparent;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 10px 20px rgba(123, 92, 255, 0.2);
+    }
+
+    .btn-primary:not(:disabled):active {
+      transform: scale(0.98);
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--fg);
+      border-color: var(--border);
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding-bottom: clamp(16px, 4vw, 24px);
+    }
+
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+    }
+
+    .modal-backdrop[hidden] {
+      display: none !important;
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: clamp(24px, 6vw, 36px);
+      width: min(420px, 100%);
+      display: grid;
+      gap: 16px;
+      text-align: center;
+      border: 1px solid rgba(123, 92, 255, 0.15);
+      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.25);
+    }
+
+    .modal-card img {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto;
+    }
+
+    .modal-card h2 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .modal-card p { margin: 0; color: var(--muted); }
+
+    .modal-note {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 600px) {
+      .services {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      }
+
+      header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      header img {
+        width: 60px;
+        height: 60px;
+      }
+
+      .actions {
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 <body>
-  <main class="wrap">
+  <div id="installModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="installTitle" aria-hidden="true" hidden>
+    <div class="modal-card">
+      <img src="./logo-sb.png" alt="StreamBuddy logo" />
+      <h2 id="installTitle">Install StreamBuddy</h2>
+      <p>Install StreamBuddy on your device for quick access and offline support.</p>
+      <button id="installBtn" class="btn-primary" type="button" disabled data-mode="loading">Preparing install…</button>
+      <p id="installMessage" class="modal-note" hidden></p>
+    </div>
+  </div>
+
+  <main class="wrap" aria-hidden="false">
     <div class="card">
       <header>
         <img src="./logo-sb.png" alt="StreamBuddy logo" />
@@ -76,175 +293,332 @@ a:hover { text-decoration: underline; }
           <h1>StreamBuddy</h1>
           <p>Pick your services + vibe. Jump straight to smart, live-streaming recommendations.</p>
         </div>
-      </header><form id="sb-form">
-    <!-- Services -->
-    <div class="section">
-      <div class="label">Which streaming services do you have? <span class="hint">(pick all that apply)</span></div>
-      <div class="services" id="services">
-        <!-- Rendered by JS -->
-      </div>
+      </header>
+      <form id="sb-form">
+        <div class="section">
+          <div class="label">Which streaming services do you have? <span class="hint">(pick all that apply)</span></div>
+          <div class="services" id="services"></div>
+        </div>
+
+        <div class="section">
+          <div class="label">Looking for a movie or a show?</div>
+          <div class="choice" id="typeChoice" role="radiogroup" aria-label="Type">
+            <div class="pill" data-value="Movie" tabindex="0" role="radio" aria-checked="false">Movie</div>
+            <div class="pill" data-value="Show" tabindex="0" role="radio" aria-checked="false">Show</div>
+          </div>
+          <input type="hidden" name="type" id="type" />
+        </div>
+
+        <div class="section row">
+          <div>
+            <label class="label" for="mood">Mood / genre</label>
+            <input id="mood" name="mood" type="text" placeholder="e.g., feel-good comedy, gritty thriller, cozy family" />
+          </div>
+          <div>
+            <label class="label" for="length">Length preference</label>
+            <input id="length" name="length" type="text" placeholder="e.g., under 2 hours, quick 30-min eps, epic marathon" />
+          </div>
+        </div>
+
+        <div class="section">
+          <label class="label" for="region">Region</label>
+          <select id="region" name="region">
+            <option value="United States" selected>United States</option>
+            <option value="Canada">Canada</option>
+            <option value="United Kingdom">United Kingdom</option>
+            <option value="Australia">Australia</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="section">
+          <label class="label" for="note">Anything else we should know?</label>
+          <textarea id="note" name="note" placeholder="e.g., Prefer PG-13, something new, need background-friendly, etc."></textarea>
+        </div>
+
+        <div class="actions">
+          <button class="btn-secondary" type="button" id="resetBtn" title="Clear selections">Reset</button>
+          <button class="btn-primary" type="submit">Find something to watch →</button>
+        </div>
+      </form>
     </div>
+    <footer>Built with ❤ for couch time.</footer>
+  </main>
 
-    <!-- Movie or Show -->
-    <div class="section">
-      <div class="label">Looking for a movie or a show?</div>
-      <div class="choice" id="typeChoice" role="radiogroup" aria-label="Type">
-        <div class="pill" data-value="Movie" tabindex="0" role="radio" aria-checked="false">Movie</div>
-        <div class="pill" data-value="Show" tabindex="0" role="radio" aria-checked="false">Show</div>
-      </div>
-      <input type="hidden" name="type" id="type" />
-    </div>
+  <script>
+    (function () {
+      const GPT_URL = "https://chatgpt.com/g/g-68db4aded8108191b411986b44384c32-streambuddy";
+      const SERVICE_LIST = [
+        "Netflix","Hulu","Prime Video","Disney+","Max","Peacock","Paramount+","Apple TV+",
+        "Starz","Showtime","AMC+","Crunchyroll","Tubi","Pluto TV","Freevee","MUBI","Sling TV"
+      ];
 
-    <!-- Details -->
-    <div class="section row">
-      <div>
-        <label class="label" for="mood">Mood / genre</label>
-        <input id="mood" name="mood" type="text" placeholder="e.g., feel-good comedy, gritty thriller, cozy family" />
-      </div>
-      <div>
-        <label class="label" for="length">Length preference</label>
-        <input id="length" name="length" type="text" placeholder="e.g., under 2 hours, quick 30-min eps, epic marathon" />
-      </div>
-    </div>
+      const installModal = document.getElementById('installModal');
+      const installButton = document.getElementById('installBtn');
+      const installMessage = document.getElementById('installMessage');
+      const main = document.querySelector('main.wrap');
+      const INSTALL_KEY = 'sb_pwa_installed';
+      let deferredInstallPrompt = null;
+      let awaitingManualConfirm = false;
+      let installCompleted = false;
 
-    <!-- Region -->
-    <div class="section">
-      <label class="label" for="region">Region</label>
-      <select id="region" name="region">
-        <option value="United States" selected>United States</option>
-        <option value="Canada">Canada</option>
-        <option value="United Kingdom">United Kingdom</option>
-        <option value="Australia">Australia</option>
-        <option value="Other">Other</option>
-      </select>
-      <div class="hint">Defaults to U.S. availability for catalog checks.</div>
-    </div>
+      const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-    <!-- Free text prompt (optional) -->
-    <div class="section">
-      <label class="label" for="note">Anything else?</label>
-      <textarea id="note" name="note" placeholder="Allergic to jump scares, love heist stories, short attention span tonight…"></textarea>
-    </div>
+      const hasInstalled = () => localStorage.getItem(INSTALL_KEY) === 'true' || isStandalone();
 
-    <div class="actions">
-      <button class="btn-secondary" type="button" id="resetBtn" title="Clear selections">Reset</button>
-      <button class="btn-primary" type="submit">Find something to watch →</button>
-    </div>
-  </form>
-</div>
-<footer>
-Built with ❤ for couch time.
-</footer>
-
-  </main>  <script>
-    // --- Config ---
-    const GPT_URL = "https://chatgpt.com/g/g-68db4aded8108191b411986b44384c32-streambuddy";
-    const SERVICE_LIST = [
-      "Netflix","Hulu","Prime Video","Disney+","Max","Peacock","Paramount+","Apple TV+",
-      "Starz","Showtime","AMC+","Crunchyroll","Tubi","Pluto TV","Freevee","MUBI","Sling TV"
-    ];
-
-    // Render service checkboxes
-    const servicesEl = document.getElementById('services');
-    SERVICE_LIST.forEach(name => {
-      const id = 'svc-' + name.replace(/[^a-z0-9]+/gi,'-').toLowerCase();
-      const label = document.createElement('label');
-      label.className = 'chip';
-      label.htmlFor = id;
-      label.innerHTML = `<input id="${id}" type="checkbox" name="services" value="${name}"/> <span>${name}</span>`;
-      servicesEl.appendChild(label);
-    });
-
-    // Movie/Show pills → hidden input
-    const typeChoice = document.getElementById('typeChoice');
-    const typeInput = document.getElementById('type');
-    typeChoice.addEventListener('click', (e) => {
-      const pill = e.target.closest('.pill');
-      if (!pill) return;
-      [...typeChoice.children].forEach(el => el.dataset.active = 'false');
-      pill.dataset.active = 'true';
-      typeInput.value = pill.dataset.value;
-      [...typeChoice.querySelectorAll('[role="radio"]')].forEach(el => el.setAttribute('aria-checked','false'));
-      pill.setAttribute('aria-checked','true');
-    });
-    // Keyboard support
-    typeChoice.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.target.click(); }
-    });
-
-    // Persist minimal state (services + type) across refresh within same browser
-    const saveState = () => {
-      const svcs = [...document.querySelectorAll('input[name="services"]:checked')].map(i=>i.value);
-      localStorage.setItem('sb_services', JSON.stringify(svcs));
-      localStorage.setItem('sb_type', typeInput.value || '');
-    };
-    const loadState = () => {
-      try {
-        const svcs = JSON.parse(localStorage.getItem('sb_services')||'[]');
-        svcs.forEach(v => {
-          const el = document.querySelector(`input[name="services"][value="${v}"]`);
-          if (el) el.checked = true;
-        });
-        const t = localStorage.getItem('sb_type');
-        if (t) {
-          const target = [...typeChoice.children].find(el => el.dataset.value === t);
-          if (target) { target.click(); }
+      const setModalVisible = (visible) => {
+        if (!installModal) return;
+        installModal.hidden = !visible;
+        installModal.setAttribute('aria-hidden', String(!visible));
+        installModal.style.display = visible ? 'flex' : 'none';
+        document.body.classList.toggle('modal-open', visible);
+        if (main) {
+          main.setAttribute('aria-hidden', visible ? 'true' : 'false');
+          main.classList.toggle('blurred', visible);
+          if ('inert' in main) {
+            main.inert = visible;
+          }
         }
-      } catch {}
-    };
-    loadState();
+        if (!installButton) {
+          if (!visible && installMessage) {
+            installMessage.hidden = true;
+          }
+          return;
+        }
+        if (visible) {
+          installButton.focus({ preventScroll: true });
+          if (installButton.disabled && installMessage) {
+            installMessage.hidden = false;
+            installMessage.textContent = 'Hang tight—your browser is preparing the install prompt.';
+          }
+        } else if (installMessage) {
+          installMessage.hidden = true;
+        }
+      };
 
-    // Form submission → build q param and open GPT
-    const form = document.getElementById('sb-form');
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const services = [...document.querySelectorAll('input[name="services"]:checked')].map(i => i.value);
-      const type = typeInput.value.trim();
-      const mood = document.getElementById('mood').value.trim();
-      const lengthPref = document.getElementById('length').value.trim();
-      const region = document.getElementById('region').value.trim() || 'United States';
-      const note = document.getElementById('note').value.trim();
+      const setButtonMode = (mode, label, disabled = false) => {
+        if (!installButton) return;
+        installButton.dataset.mode = mode;
+        installButton.textContent = label;
+        installButton.disabled = disabled;
+      };
 
-      if (services.length === 0) {
-        alert('Please select at least one streaming service.');
-        return;
+      const dismissModal = (permanent = false) => {
+        setModalVisible(false);
+        if (permanent && installModal && installModal.parentElement) {
+          installModal.parentElement.removeChild(installModal);
+        }
+      };
+
+      const markInstallComplete = () => {
+        if (installCompleted) return;
+        installCompleted = true;
+        awaitingManualConfirm = false;
+        localStorage.setItem(INSTALL_KEY, 'true');
+        setButtonMode('close', 'Close', false);
+        if (installMessage) {
+          installMessage.hidden = false;
+          installMessage.textContent = 'StreamBuddy is ready! Tap Close to start using the app.';
+        }
+        dismissModal(true);
+      };
+
+      setButtonMode('install', 'Install StreamBuddy', false);
+
+      if (hasInstalled()) {
+        installCompleted = true;
+        localStorage.setItem(INSTALL_KEY, 'true');
+        dismissModal(true);
+      } else {
+        setModalVisible(true);
       }
-      if (!type) {
-        alert('Please choose Movie or Show.');
-        return;
+
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        setButtonMode('install', 'Install StreamBuddy', false);
+        if (installMessage) {
+          installMessage.hidden = false;
+          installMessage.textContent = 'Tap “Install StreamBuddy” to continue.';
+        }
+      });
+
+      if (installButton) {
+        installButton.addEventListener('click', async () => {
+          const mode = installButton.dataset.mode;
+
+          if (mode === 'close') {
+            dismissModal(true);
+            return;
+          }
+
+          if (mode === 'confirm' || awaitingManualConfirm) {
+            if (!hasInstalled()) {
+              if (installMessage) {
+                installMessage.hidden = false;
+                installMessage.textContent = 'Finish adding StreamBuddy to your home screen, then tap “I installed StreamBuddy”.';
+              }
+              return;
+            }
+            markInstallComplete();
+            return;
+          }
+
+          if (!deferredInstallPrompt) {
+            if (installMessage) {
+              installMessage.hidden = false;
+              installMessage.textContent = 'Install StreamBuddy from your browser menu, then tap “I installed StreamBuddy” once it’s installed.';
+            }
+            awaitingManualConfirm = true;
+            setButtonMode('confirm', 'I installed StreamBuddy', false);
+            return;
+          }
+
+          setButtonMode('install', 'Installing…', true);
+          try {
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            if (outcome === 'accepted') {
+              markInstallComplete();
+            } else {
+              setButtonMode('install', 'Install StreamBuddy', false);
+            }
+          } catch (error) {
+            console.warn('Install prompt failed', error);
+            setButtonMode('install', 'Install StreamBuddy', false);
+            if (installMessage) {
+              installMessage.hidden = false;
+              installMessage.textContent = 'We couldn\'t open the install prompt. Try using your browser menu to add StreamBuddy to your home screen.';
+            }
+          }
+          deferredInstallPrompt = null;
+        });
       }
 
-      // Save state
-      saveState();
+      window.addEventListener('appinstalled', () => {
+        markInstallComplete();
+      });
 
-      // Compose the conversation seed using your preferred q-method
-      const lines = [
-        `Streaming services: ${services.join(', ')}`,
-        `Region: ${region}`,
-        `I want a ${type.toLowerCase()}.`,
-        mood ? `Mood/genre: ${mood}` : '',
-        lengthPref ? `Length: ${lengthPref}` : '',
-        note ? `Notes: ${note}` : '',
-        'Please recommend 1–3 options formatted exactly as:\nStreaming Service\nTitle\nMain stars\nReview Rating (Rotten Tomatoes preferred)\nSummary',
-        'Remember my services for this session.'
-      ].filter(Boolean).join('\n');
+      document.addEventListener('visibilitychange', () => {
+        if (!installCompleted && !installModal.hidden && hasInstalled()) {
+          markInstallComplete();
+        }
+      });
 
-      const url = `${GPT_URL}?q=${encodeURIComponent(lines)}`;
-      window.open(url, '_blank', 'noopener');
-    });
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+        });
+      }
 
-    // Reset
-    document.getElementById('resetBtn').addEventListener('click', () => {
-      [...document.querySelectorAll('input[name="services"]')].forEach(i => i.checked = false);
-      [...typeChoice.children].forEach(el => el.dataset.active = 'false');
-      [...typeChoice.querySelectorAll('[role="radio"]')].forEach(el => el.setAttribute('aria-checked','false'));
-      typeInput.value = '';
-      document.getElementById('mood').value = '';
-      document.getElementById('length').value = '';
-      document.getElementById('region').value = 'United States';
-      document.getElementById('note').value = '';
-      localStorage.removeItem('sb_services');
-      localStorage.removeItem('sb_type');
-    });
-  </script></body>
+      const servicesEl = document.getElementById('services');
+      SERVICE_LIST.forEach((name) => {
+        const id = 'svc-' + name.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+        const label = document.createElement('label');
+        label.className = 'chip';
+        label.htmlFor = id;
+        label.innerHTML = `<input id="${id}" type="checkbox" name="services" value="${name}" /> <span>${name}</span>`;
+        servicesEl.appendChild(label);
+      });
+
+      const typeChoice = document.getElementById('typeChoice');
+      const typeInput = document.getElementById('type');
+      typeChoice.addEventListener('click', (e) => {
+        const pill = e.target.closest('.pill');
+        if (!pill) return;
+        [...typeChoice.children].forEach((el) => (el.dataset.active = 'false'));
+        pill.dataset.active = 'true';
+        typeInput.value = pill.dataset.value;
+        [...typeChoice.querySelectorAll('[role="radio"]')].forEach((el) => el.setAttribute('aria-checked', 'false'));
+        pill.setAttribute('aria-checked', 'true');
+      });
+
+      typeChoice.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const pill = e.target.closest('.pill');
+          if (pill) {
+            pill.click();
+          }
+        }
+      });
+
+      const saveState = () => {
+        const svcs = [...document.querySelectorAll('input[name="services"]:checked')].map((i) => i.value);
+        localStorage.setItem('sb_services', JSON.stringify(svcs));
+        localStorage.setItem('sb_type', typeInput.value || '');
+      };
+
+      const loadState = () => {
+        try {
+          const svcs = JSON.parse(localStorage.getItem('sb_services') || '[]');
+          svcs.forEach((v) => {
+            const el = document.querySelector(`input[name="services"][value="${v}"]`);
+            if (el) el.checked = true;
+          });
+          const t = localStorage.getItem('sb_type');
+          if (t) {
+            const target = [...typeChoice.children].find((el) => el.dataset.value === t);
+            if (target) {
+              target.click();
+            }
+          }
+        } catch (error) {
+          console.warn('Unable to load saved preferences', error);
+        }
+      };
+
+      loadState();
+
+      const form = document.getElementById('sb-form');
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const services = [...document.querySelectorAll('input[name="services"]:checked')].map((i) => i.value);
+        const type = typeInput.value.trim();
+        const mood = document.getElementById('mood').value.trim();
+        const lengthPref = document.getElementById('length').value.trim();
+        const region = document.getElementById('region').value.trim() || 'United States';
+        const note = document.getElementById('note').value.trim();
+
+        if (services.length === 0) {
+          alert('Please select at least one streaming service.');
+          return;
+        }
+        if (!type) {
+          alert('Please choose Movie or Show.');
+          return;
+        }
+
+        saveState();
+
+        const lines = [
+          `Streaming services: ${services.join(', ')}`,
+          `Region: ${region}`,
+          `I want a ${type.toLowerCase()}.`,
+          mood ? `Mood/genre: ${mood}` : '',
+          lengthPref ? `Length: ${lengthPref}` : '',
+          note ? `Notes: ${note}` : '',
+          'Please recommend 1–3 options formatted exactly as:\nStreaming Service\nTitle\nMain stars\nReview Rating (Rotten Tomatoes preferred)\nSummary',
+          'Remember my services for this session.'
+        ].filter(Boolean).join('\n');
+
+        const url = `${GPT_URL}?q=${encodeURIComponent(lines)}`;
+        window.open(url, '_blank', 'noopener');
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        [...document.querySelectorAll('input[name="services"]')].forEach((i) => (i.checked = false));
+        [...typeChoice.children].forEach((el) => (el.dataset.active = 'false'));
+        [...typeChoice.querySelectorAll('[role="radio"]')].forEach((el) => el.setAttribute('aria-checked', 'false'));
+        typeInput.value = '';
+        document.getElementById('mood').value = '';
+        document.getElementById('length').value = '';
+        document.getElementById('region').value = 'United States';
+        document.getElementById('note').value = '';
+        localStorage.removeItem('sb_services');
+        localStorage.removeItem('sb_type');
+      });
+    })();
+  </script>
+</body>
 </html>
