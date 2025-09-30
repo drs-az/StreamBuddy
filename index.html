@@ -207,8 +207,30 @@
     .hint { color: var(--muted); font-size: 0.9rem; }
 
     .row { display: grid; gap: 10px; }
+
+    .length-fieldset {
+      border: 0;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .length-range {
+      display: grid;
+      gap: 10px;
+    }
+
+    .length-select-label {
+      display: grid;
+      gap: 6px;
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
     @media (min-width: 640px) {
       .row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .length-range { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     input[type="text"], textarea, select {
@@ -438,8 +460,19 @@
             <input id="mood" name="mood" type="text" placeholder="e.g., feel-good comedy, gritty thriller, cozy family" />
           </div>
           <div>
-            <label class="label" for="length">Length preference</label>
-            <input id="length" name="length" type="text" placeholder="e.g., under 2 hours, quick 30-min eps, epic marathon" />
+            <fieldset class="length-fieldset">
+              <legend class="label">Length preference</legend>
+              <div class="length-range">
+                <label class="length-select-label" for="lengthMin">
+                  <span>Minimum</span>
+                  <select id="lengthMin" name="lengthMin"></select>
+                </label>
+                <label class="length-select-label" for="lengthMax">
+                  <span>Maximum</span>
+                  <select id="lengthMax" name="lengthMax"></select>
+                </label>
+              </div>
+            </fieldset>
           </div>
         </div>
 
@@ -486,6 +519,10 @@
       const main = document.querySelector('main.wrap');
       const updateButton = document.getElementById('updateBtn');
       const updateStatus = document.getElementById('updateStatus');
+      const lengthMinSelect = document.getElementById('lengthMin');
+      const lengthMaxSelect = document.getElementById('lengthMax');
+      const LENGTH_INCREMENT = 15;
+      const LENGTH_MAX_MINUTES = 240;
       const INSTALL_KEY = 'sb_pwa_installed';
       let deferredInstallPrompt = null;
       let awaitingManualConfirm = false;
@@ -726,6 +763,40 @@
         });
       }
 
+      const formatMinutesLabel = (minutes) => {
+        const total = Number(minutes);
+        const hrs = Math.floor(total / 60);
+        const mins = total % 60;
+        const parts = [];
+        if (hrs) {
+          parts.push(`${hrs} hr${hrs > 1 ? 's' : ''}`);
+        }
+        if (mins) {
+          parts.push(`${mins} min`);
+        }
+        if (parts.length === 0) {
+          return '0 min';
+        }
+        return parts.join(' ');
+      };
+
+      const buildLengthOptions = (select, placeholder) => {
+        if (!select) return;
+        const initialOption = document.createElement('option');
+        initialOption.value = '';
+        initialOption.textContent = placeholder;
+        select.appendChild(initialOption);
+        for (let minutes = 0; minutes <= LENGTH_MAX_MINUTES; minutes += LENGTH_INCREMENT) {
+          const option = document.createElement('option');
+          option.value = String(minutes);
+          option.textContent = formatMinutesLabel(minutes);
+          select.appendChild(option);
+        }
+      };
+
+      buildLengthOptions(lengthMinSelect, 'No minimum');
+      buildLengthOptions(lengthMaxSelect, 'No maximum');
+
       const servicesEl = document.getElementById('services');
       let youtubeCheckbox = null;
       SERVICE_LIST.forEach((name) => {
@@ -861,7 +932,8 @@
         const services = [...document.querySelectorAll('input[name="services"]:checked')].map((i) => i.value);
         const type = typeInput.value.trim();
         const mood = document.getElementById('mood').value.trim();
-        const lengthPref = document.getElementById('length').value.trim();
+        const minLengthValue = lengthMinSelect ? lengthMinSelect.value : '';
+        const maxLengthValue = lengthMaxSelect ? lengthMaxSelect.value : '';
         const region = document.getElementById('region').value.trim() || 'United States';
         const note = document.getElementById('note').value.trim();
 
@@ -874,7 +946,36 @@
           return;
         }
 
+        if (minLengthValue && maxLengthValue && Number(minLengthValue) > Number(maxLengthValue)) {
+          alert('Minimum length cannot be greater than maximum length.');
+          return;
+        }
+
         saveState();
+
+        const describeLengthPreference = () => {
+          const hasMin = Boolean(minLengthValue);
+          const hasMax = Boolean(maxLengthValue);
+          if (!hasMin && !hasMax) return '';
+
+          const minMinutes = hasMin ? Number(minLengthValue) : null;
+          const maxMinutes = hasMax ? Number(maxLengthValue) : null;
+
+          if (hasMin && hasMax) {
+            if (minMinutes === maxMinutes) {
+              return `Length: Around ${formatMinutesLabel(minMinutes)}`;
+            }
+            return `Length: ${formatMinutesLabel(minMinutes)} to ${formatMinutesLabel(maxMinutes)}`;
+          }
+
+          if (hasMin) {
+            return `Length: At least ${formatMinutesLabel(minMinutes)}`;
+          }
+
+          return `Length: Up to ${formatMinutesLabel(maxMinutes)}`;
+        };
+
+        const lengthPref = describeLengthPreference();
 
         const formatLine = type === 'Videos' ? 'I want videos.' : `I want a ${type.toLowerCase()}.`;
 
@@ -883,7 +984,7 @@
           `Region: ${region}`,
           formatLine,
           mood ? `Mood/genre: ${mood}` : '',
-          lengthPref ? `Length: ${lengthPref}` : '',
+          lengthPref ? lengthPref : '',
           note ? `Notes: ${note}` : '',
           'Please recommend 1–3 options formatted exactly as:\nStreaming Service\nTitle\nLink: [URL] (provide the direct link using this exact label)\nMain stars\nReview Rating (Rotten Tomatoes preferred)\nSummary',
           'Remember my services for this session.'
@@ -899,7 +1000,8 @@
         [...typeChoice.querySelectorAll('[role="radio"]')].forEach((el) => el.setAttribute('aria-checked', 'false'));
         typeInput.value = '';
         document.getElementById('mood').value = '';
-        document.getElementById('length').value = '';
+        if (lengthMinSelect) lengthMinSelect.value = '';
+        if (lengthMaxSelect) lengthMaxSelect.value = '';
         document.getElementById('region').value = 'United States';
         document.getElementById('note').value = '';
         localStorage.removeItem('sb_services');
