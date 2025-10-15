@@ -494,6 +494,7 @@
 
         <div class="actions">
           <button class="btn-secondary" type="button" id="resetBtn" title="Clear selections">Reset</button>
+          <button class="btn-secondary" type="button" id="copyPromptBtn" title="Copy the StreamBuddy prompt">Copy Prompt</button>
           <button class="btn-primary" type="submit">Find something to watch →</button>
         </div>
       </form>
@@ -521,6 +522,7 @@
       const updateStatus = document.getElementById('updateStatus');
       const lengthMinSelect = document.getElementById('lengthMin');
       const lengthMaxSelect = document.getElementById('lengthMax');
+      const copyPromptButton = document.getElementById('copyPromptBtn');
       const LENGTH_INCREMENT = 15;
       const LENGTH_MAX_MINUTES = 240;
       const INSTALL_KEY = 'sb_pwa_installed';
@@ -884,6 +886,66 @@
 
       loadState();
 
+      const buildPrompt = () => {
+        const services = [...document.querySelectorAll('input[name="services"]:checked')].map((input) => input.value);
+        if (services.length === 0) {
+          throw new Error('Please select at least one streaming service.');
+        }
+
+        const type = typeInput.value.trim();
+        if (!type) {
+          throw new Error('Please choose Movie, Show, or Videos.');
+        }
+
+        const mood = document.getElementById('mood').value.trim();
+        const minLengthValue = lengthMinSelect ? lengthMinSelect.value : '';
+        const maxLengthValue = lengthMaxSelect ? lengthMaxSelect.value : '';
+        const region = document.getElementById('region').value.trim() || 'United States';
+        const note = document.getElementById('note').value.trim();
+
+        if (minLengthValue && maxLengthValue && Number(minLengthValue) > Number(maxLengthValue)) {
+          throw new Error('Minimum length cannot be greater than maximum length.');
+        }
+
+        saveState();
+
+        const describeLengthPreference = () => {
+          const hasMin = Boolean(minLengthValue);
+          const hasMax = Boolean(maxLengthValue);
+          if (!hasMin && !hasMax) return '';
+
+          const minMinutes = hasMin ? Number(minLengthValue) : null;
+          const maxMinutes = hasMax ? Number(maxLengthValue) : null;
+
+          if (hasMin && hasMax) {
+            if (minMinutes === maxMinutes) {
+              return `Length: Around ${formatMinutesLabel(minMinutes)}`;
+            }
+            return `Length: ${formatMinutesLabel(minMinutes)} to ${formatMinutesLabel(maxMinutes)}`;
+          }
+
+          if (hasMin) {
+            return `Length: At least ${formatMinutesLabel(minMinutes)}`;
+          }
+
+          return `Length: Up to ${formatMinutesLabel(maxMinutes)}`;
+        };
+
+        const lengthPref = describeLengthPreference();
+        const formatLine = type === 'Videos' ? 'I want videos.' : `I want a ${type.toLowerCase()}.`;
+
+        return [
+          `Streaming services: ${services.join(', ')}`,
+          `Region: ${region}`,
+          formatLine,
+          mood ? `Mood/genre: ${mood}` : '',
+          lengthPref ? lengthPref : '',
+          note ? `Notes: ${note}` : '',
+          'Please recommend 1–3 options formatted exactly as:\\nStreaming Service\\nTitle\\nLink: [URL] (provide the direct link using this exact label)\\nMain stars\\nReview Rating (Rotten Tomatoes preferred)\\nSummary',
+          'Remember my services for this session.'
+        ].filter(Boolean).join('\\n');
+      };
+
       const introToggle = document.getElementById('introToggle');
       const introContent = document.getElementById('introContent');
       const introRetract = document.getElementById('introRetract');
@@ -927,72 +989,55 @@
       }
 
       const form = document.getElementById('sb-form');
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const services = [...document.querySelectorAll('input[name="services"]:checked')].map((i) => i.value);
-        const type = typeInput.value.trim();
-        const mood = document.getElementById('mood').value.trim();
-        const minLengthValue = lengthMinSelect ? lengthMinSelect.value : '';
-        const maxLengthValue = lengthMaxSelect ? lengthMaxSelect.value : '';
-        const region = document.getElementById('region').value.trim() || 'United States';
-        const note = document.getElementById('note').value.trim();
-
-        if (services.length === 0) {
-          alert('Please select at least one streaming service.');
-          return;
-        }
-        if (!type) {
-          alert('Please choose Movie, Show, or Videos.');
-          return;
-        }
-
-        if (minLengthValue && maxLengthValue && Number(minLengthValue) > Number(maxLengthValue)) {
-          alert('Minimum length cannot be greater than maximum length.');
-          return;
-        }
-
-        saveState();
-
-        const describeLengthPreference = () => {
-          const hasMin = Boolean(minLengthValue);
-          const hasMax = Boolean(maxLengthValue);
-          if (!hasMin && !hasMax) return '';
-
-          const minMinutes = hasMin ? Number(minLengthValue) : null;
-          const maxMinutes = hasMax ? Number(maxLengthValue) : null;
-
-          if (hasMin && hasMax) {
-            if (minMinutes === maxMinutes) {
-              return `Length: Around ${formatMinutesLabel(minMinutes)}`;
-            }
-            return `Length: ${formatMinutesLabel(minMinutes)} to ${formatMinutesLabel(maxMinutes)}`;
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          let prompt;
+          try {
+            prompt = buildPrompt();
+          } catch (error) {
+            alert(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+            return;
           }
 
-          if (hasMin) {
-            return `Length: At least ${formatMinutesLabel(minMinutes)}`;
+          const url = `${GPT_URL}?q=${encodeURIComponent(prompt)}`;
+          window.open(url, '_blank', 'noopener');
+        });
+      }
+
+      if (copyPromptButton) {
+        copyPromptButton.addEventListener('click', async () => {
+          let prompt;
+          try {
+            prompt = buildPrompt();
+          } catch (error) {
+            alert(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+            return;
           }
 
-          return `Length: Up to ${formatMinutesLabel(maxMinutes)}`;
-        };
+          if (!navigator.clipboard || !navigator.clipboard.writeText) {
+            alert('Copying to the clipboard is not supported in this browser.');
+            return;
+          }
 
-        const lengthPref = describeLengthPreference();
+          const originalLabel = copyPromptButton.textContent;
+          copyPromptButton.disabled = true;
+          copyPromptButton.textContent = 'Copying…';
 
-        const formatLine = type === 'Videos' ? 'I want videos.' : `I want a ${type.toLowerCase()}.`;
-
-        const lines = [
-          `Streaming services: ${services.join(', ')}`,
-          `Region: ${region}`,
-          formatLine,
-          mood ? `Mood/genre: ${mood}` : '',
-          lengthPref ? lengthPref : '',
-          note ? `Notes: ${note}` : '',
-          'Please recommend 1–3 options formatted exactly as:\nStreaming Service\nTitle\nLink: [URL] (provide the direct link using this exact label)\nMain stars\nReview Rating (Rotten Tomatoes preferred)\nSummary',
-          'Remember my services for this session.'
-        ].filter(Boolean).join('\n');
-
-        const url = `${GPT_URL}?q=${encodeURIComponent(lines)}`;
-        window.open(url, '_blank', 'noopener');
-      });
+          try {
+            await navigator.clipboard.writeText(prompt);
+            copyPromptButton.textContent = 'Copied!';
+            window.setTimeout(() => {
+              copyPromptButton.textContent = originalLabel;
+              copyPromptButton.disabled = false;
+            }, 2000);
+          } catch (copyError) {
+            copyPromptButton.textContent = originalLabel;
+            copyPromptButton.disabled = false;
+            alert('Unable to copy to the clipboard. Please try again.');
+          }
+        });
+      }
 
       document.getElementById('resetBtn').addEventListener('click', () => {
         [...document.querySelectorAll('input[name="services"]')].forEach((i) => (i.checked = false));
