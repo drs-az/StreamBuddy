@@ -532,6 +532,14 @@
       let installCompleted = false;
       let updateButtonTimeout = null;
 
+      const isMobileDevice = () => {
+        if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+          return navigator.userAgentData.mobile;
+        }
+        const ua = navigator.userAgent || '';
+        return /android|iphone|ipad|ipod|windows phone|blackberry/i.test(ua);
+      };
+
       const setUpdateButtonState = (label, disabled = false) => {
         if (!updateButton) return;
         updateButton.textContent = label;
@@ -639,13 +647,17 @@
 
       setButtonMode('install', 'Install StreamBuddy', false);
 
+      const shouldShowInstallModal = isMobileDevice();
+
       if (hasInstalled()) {
         installCompleted = true;
 
         localStorage.setItem(INSTALL_KEY, 'true');
         dismissModal(true);
-      } else {
+      } else if (shouldShowInstallModal) {
         setModalVisible(true);
+      } else {
+        dismissModal();
 
       }
 
